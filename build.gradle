@@ -1,0 +1,29 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+
+buildscript {
+	dependencies {
+		classpath libs.kotlin.plugin
+		classpath libs.kotlin.plugin.compose
+		classpath libs.android.plugin
+		classpath libs.jetbrains.compose.gradlePlugin
+		classpath libs.cklib.gradlePlugin
+		classpath libs.jextract.gradlePlugin
+	}
+	repositories {
+		mavenCentral()
+		google()
+		gradlePluginPortal()
+	}
+}
+
+allprojects {
+	tasks.withType(JavaCompile).configureEach {
+		sourceCompatibility = JavaVersion.VERSION_11
+		targetCompatibility = JavaVersion.VERSION_11
+	}
+
+	tasks.withType(KotlinJvmCompile).configureEach {
+		compilerOptions.jvmTarget = JvmTarget.JVM_11
+	}
+}

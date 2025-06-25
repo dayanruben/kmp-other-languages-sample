@@ -1,0 +1,14 @@
+rootProject.name = 'kmp-other-languages-sample'
+
+include ':adder'
+include ':app-gui'
+include ':app-cli'
+
+enableFeaturePreview('TYPESAFE_PROJECT_ACCESSORS')
+
+dependencyResolutionManagement {
+	repositories {
+		mavenCentral()
+		google()
+	}
+}

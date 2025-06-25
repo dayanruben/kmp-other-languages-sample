@@ -1,0 +1,101 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+
+apply plugin: 'org.jetbrains.kotlin.multiplatform'
+apply plugin: 'de.infolektuell.jextract'
+
+jextract.libraries.create('add') {
+	header = file('include/add.h')
+	headerClassName = 'Libadd'
+	targetPackage = 'com.example.adder'
+}
+
+kotlin {
+	jvm()
+
+	macosArm64 {
+		compilations.configureEach {
+			kotlinOptions {
+				freeCompilerArgs += [
+					"-include-binary",
+					file('src/nativeMain/binaries/aarch64/libadd.a').absolutePath,
+					"-linker-option",
+					"-ladd",
+				]
+			}
+		}
+	}
+
+	// TODO The other targets...
+	//  androidTarget() (via https://ziggit.dev/t/targeting-android/4101)
+	//  linuxArm64()
+	//  linuxX64()
+	//  macosX64()
+	//  mingwX64()
+
+	applyDefaultHierarchyTemplate()
+	explicitApi()
+
+	sourceSets {
+		commonTest {
+			dependencies {
+				implementation libs.kotlin.test
+			}
+		}
+
+		configureEach {
+			languageSettings {
+				optIn('kotlinx.cinterop.ExperimentalForeignApi')
+			}
+		}
+	}
+
+	targets.withType(KotlinJvmTarget).configureEach {
+		def mainCompilation = compilations.named('main')
+
+		def jdk22Compilation = compilations.create('jdk22') {
+			// I can't find a way to add a Java srcDir, so we have to add it both to Kotlin task so its
+			// sources can link and to Java task so the files are actually compiled to classes.
+			def mosaicFfmJava = tasks.named('jextract')
+			defaultSourceSet.kotlin.srcDir(mosaicFfmJava)
+			compileJavaTaskProvider.configure { task ->
+				task.source(mosaicFfmJava)
+			}
+
+			compileTaskProvider.configure { task ->
+				task.compilerOptions { options ->
+					options.jvmTarget = JvmTarget.JVM_22
+					options.freeCompilerArgs.add('-Xexplicit-api=strict')
+				}
+			}
+			compileJavaTaskProvider.configure { task ->
+				task.sourceCompatibility = '22'
+				task.targetCompatibility = '22'
+			}
+			associateWith(mainCompilation.get())
+		}
+
+		tasks.named(artifactsTaskName, Jar) {
+			from(jdk22Compilation.output) {
+				into('META-INF/versions/22')
+				// Don't add a nested .kotlin_module file.
+				exclude('META-INF')
+				// Empty class noise produced by jextract.
+				exclude('**/_*.class')
+			}
+			manifest {
+				attributes(['Multi-Release': 'true'])
+			}
+		}
+	}
+
+	targets.withType(KotlinNativeTarget).configureEach {
+		compilations.named('main').configure {
+			cinterops.create('add') {
+				header(file('include/add.h'))
+				packageName('com.example.adder')
+			}
+		}
+	}
+}

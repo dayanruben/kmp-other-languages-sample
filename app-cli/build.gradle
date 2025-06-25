@@ -1,0 +1,31 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+
+apply plugin: 'org.jetbrains.kotlin.multiplatform'
+
+kotlin {
+	jvm {
+		binaries {
+			executable {
+				mainClass = 'com.example.cli.Main'
+			}
+		}
+	}
+
+	macosArm64()
+
+	sourceSets {
+		commonMain {
+			dependencies {
+				implementation projects.adder
+			}
+		}
+	}
+
+	targets.withType(KotlinNativeTarget).configureEach {
+		binaries {
+			executable {
+				entryPoint = 'com.example.cli.main'
+			}
+		}
+	}
+}

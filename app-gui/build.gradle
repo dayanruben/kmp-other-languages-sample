@@ -1,0 +1,66 @@
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
+
+apply plugin: 'org.jetbrains.kotlin.multiplatform'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.compose'
+apply plugin: 'com.android.application'
+
+kotlin {
+	androidTarget {
+		instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
+	}
+
+	jvm {
+		binaries {
+			executable {
+				mainClass = 'com.example.gui.Main'
+			}
+		}
+	}
+
+	sourceSets {
+		commonMain {
+			dependencies {
+				implementation projects.adder
+				implementation compose.material3
+			}
+		}
+		commonTest {
+			dependencies {
+				implementation libs.kotlin.test
+				implementation compose.uiTest
+			}
+		}
+		androidMain {
+			dependencies {
+				implementation libs.androidx.activity.compose
+			}
+		}
+		jvmMain {
+			dependencies {
+				implementation compose.desktop.currentOs
+			}
+		}
+
+		configureEach {
+			languageSettings {
+				optIn('androidx.compose.ui.test.ExperimentalTestApi')
+			}
+		}
+	}
+}
+
+android {
+	namespace = 'com.example.gui'
+	compileSdk = 36
+
+	defaultConfig {
+		minSdk = 26
+		testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+	}
+}
+
+dependencies {
+	androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+	debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
